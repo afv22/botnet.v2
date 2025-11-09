@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import Flask, request
 from flask_cors import CORS
 
@@ -7,11 +11,11 @@ app.config["SECRET_KEY"] = "dev-secret-key"
 CORS(app)
 
 
-@app.post("/heartbeat")
+@app.route("/heartbeat")
 def heartbeat():
     print(f"Heartbeat from {request.remote_addr}")
     return {"status": "ok"}
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True, port=8000)
