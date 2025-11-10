@@ -1,6 +1,7 @@
 # Botnet Proof of Concept
 
 ## Features
+
 - Command & Control Server
   - Tracks active bots
   - Distributes propagation modules
@@ -13,16 +14,22 @@
 ## Roadmap
 
 ### Stage 1: Boilerplate
-- [ ] Basic C2 server with heartbeat endpoint
-- [ ] Basic bot sending heartbeat
 
-### State 2: Monitoring
-- [ ] C2 stores all clients in a DB, along with last beat time
-- [ ] C2 can provide basic stats about clients (lifetime, currently connected, etc)
+- [x] Basic C2 server with heartbeat endpoint
+- [x] Basic bot sending heartbeat
 
-### State 3: Execution Modules
+### Stage 2: Monitoring
+
+- [x] C2 stores all clients in a DB, along with last beat time
+- [x] C2 can provide basic stats about clients (lifetime, currently connected, etc)
+
+### Stage 3: Execution Modules
+
 - [ ] C2 broadcasts new execution modules
 - [ ] Bots fetch new modules and save them locally
-- [ ] Bots execute modules
+- [x] Bots execute modules
 
-### State 4: Propagation Modules
+### Stage 4: Improved Monitoring
+
+- [ ] C2 can monitor which modules are regularly timing out
+- [ ] C2 can monitor which modules bots have

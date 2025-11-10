@@ -5,7 +5,8 @@ load_dotenv()
 from flask import Flask, request
 from flask_cors import CORS
 
-from db import Bot, init_db
+from db import init_db
+from models import Bot
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "dev-secret-key"
