@@ -1,11 +1,7 @@
-from .common import Executable, Cadence
+from .common import SoloExecutable
 
 
-class HelloWorldModule(Executable):
-
-    @property
-    def timing(self) -> Cadence:
-        return Cadence.ONCE
+class HelloWorldModule(SoloExecutable):
 
     @staticmethod
     def execute() -> None:

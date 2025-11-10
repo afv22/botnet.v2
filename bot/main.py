@@ -1,30 +1,57 @@
+import inspect
 import time
-import requests
+from datetime import datetime, timedelta
+from importlib import import_module
+from pathlib import Path
 
-from executables.common import ExecutableManager
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ProcessPoolExecutor
 
-C2_DOMAIN = "http://localhost:8000"
+
+from executables.common import SoloExecutable, IntervalExecutable
+
+
 EXECUTABLES_DIR = "executables"
 
 
 def main():
-    mgr = ExecutableManager()
+    executors = {"default": ProcessPoolExecutor(max_workers=5)}
+    scheduler = BackgroundScheduler(executors=executors)
 
-    while True:
-        response = requests.post(url=C2_DOMAIN + "/heartbeat")
+    # Get all Python files except __init__.py and the base module
+    exec_dir = Path(__file__).parent / EXECUTABLES_DIR
+    module_files = [
+        f for f in exec_dir.glob("*.py") if f.stem not in ("__init__", "common")
+    ]
 
-        if response.status_code == 200:
-            print(response.json())
-        else:
-            print(response.content)
+    for module_file in module_files:
+        # Import the file as a module
+        module_name = f"{EXECUTABLES_DIR}.{module_file.stem}"
+        module = import_module(module_name)
 
-        mgr.execute_all()
+        # Execute the executable within the module
+        for id, mod in inspect.getmembers(module, inspect.isclass):
+            if issubclass(mod, SoloExecutable) and mod is not SoloExecutable:
+                run_time = datetime.now() + timedelta(seconds=5)
+                scheduler.add_job(mod.execute, "date", run_date=run_time)
 
-        time.sleep(10)
+            elif issubclass(mod, IntervalExecutable) and mod is not IntervalExecutable:
+                scheduler.add_job(
+                    mod.execute,
+                    "interval",
+                    seconds=mod.interval,
+                    max_instances=1,
+                    id=id,
+                )
+
+    scheduler.start()
 
 
 if __name__ == "__main__":
     try:
         main()
+
+        while True:
+            time.sleep(1)
     finally:
         print("Shutting down...")
