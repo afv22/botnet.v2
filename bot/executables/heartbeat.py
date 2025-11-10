@@ -17,4 +17,4 @@ class HeartbeatModule(IntervalExecutable):
         else:
             print(response.content)
     
-    interval = 10
+    interval = 1

@@ -6,7 +6,7 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from db import init_db
-from models import Bot
+from models import Bot, Version
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "dev-secret-key"
@@ -23,7 +23,10 @@ def heartbeat():
 
     Bot.heartbeat(request.remote_addr)
 
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "version": Version.latest_version(),
+    }
 
 
 @app.get("/bots")
