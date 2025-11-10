@@ -14,6 +14,7 @@ def init_db(app: Flask) -> None:
         # Import all models to register them with SQLAlchemy
         from models import (
             Bot,
+            Version,
         )
 
         db.create_all()
