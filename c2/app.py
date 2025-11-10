@@ -15,15 +15,19 @@ CORS(app)
 init_db(app)
 
 
-@app.route("/heartbeat")
+@app.post("/heartbeat")
 def heartbeat():
     if not request.remote_addr:
         raise RuntimeError("No IP found")
 
-    print(f"Heartbeat from {request.remote_addr}")
     Bot.heartbeat(request.remote_addr)
 
     return {"status": "ok"}
+
+
+@app.get("/bots")
+def get_bots():
+    return [bot.json() for bot in Bot.all()]
 
 
 if __name__ == "__main__":

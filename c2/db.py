@@ -39,6 +39,9 @@ class Bot(db.Model):
         db.session.add(bot)
         db.session.commit()
 
+    def json(self):
+        return {"ip": self.ip, "last_seen": self.last_seen}
+
 
 def init_db(app: Flask) -> None:
     database_uri = "sqlite:///" + "/tmp/c2.db"

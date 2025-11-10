@@ -6,7 +6,7 @@ C2_DOMAIN = "http://localhost:8000"
 
 def main():
     while True:
-        response = requests.get(url=C2_DOMAIN + "/heartbeat")
+        response = requests.post(url=C2_DOMAIN + "/heartbeat")
         
         if response.status_code == 200:
             print(response.json())
