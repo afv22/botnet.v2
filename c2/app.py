@@ -1,8 +1,9 @@
+from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 
 from db import init_db
@@ -32,6 +33,30 @@ def heartbeat():
 @app.get("/bots")
 def get_bots():
     return [bot.json() for bot in Bot.all()]
+
+
+@app.get("/updates")
+def get_updates():
+    latest_version = request.args.get("version")
+    if not latest_version:
+        raise RuntimeError("No Version number")
+
+    return {"filenames": Version.list_modified_files(int(latest_version))}
+
+
+@app.get("/updates/<filename>")
+def get_updated_file(filename):
+    return send_from_directory("executables", filename)
+
+
+@app.post("/updates/register")
+def register_updates():
+    data = request.json
+    if not data:
+        raise RuntimeError("Shit")
+
+    filenames: List[str] = data.get("filenames", "").split(",")
+    return {"new_version": Version.register_new_vesion(filenames)}
 
 
 if __name__ == "__main__":

@@ -1,11 +1,7 @@
-from .base import ExecutionModule, ExecutionTiming
+from .common import SoloExecutable
 
 
-class HelloWorldModule(ExecutionModule):
-
-    @property
-    def timing(self) -> ExecutionTiming:
-        return ExecutionTiming.ONCE
+class HelloWorldModule(SoloExecutable):
 
     @staticmethod
     def execute() -> None:

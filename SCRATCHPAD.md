@@ -25,3 +25,11 @@ If the heartbeat jobs runs over the configured interval while downloading the ne
 We'll probably want to set up some form of monitoring, backoff, or something else if downloads repeatedly fail.
 
 The module hashes should be sent to verify accuracy.
+
+Need to figure out how to start the new modules.
+
+1. Bot send Heartbeat. C2 returns latest version number.
+2. If bot's latest version is outdated, bot requests files that have since been modified. C2 returns file names and hashes.
+3. Bot requests each file. C2 returns file signed with private key.
+4. Bot verifies private key.
+5. Bot saves new file to executables folder.
