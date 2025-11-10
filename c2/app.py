@@ -17,6 +17,11 @@ CORS(app)
 init_db(app)
 
 
+@app.get("/bots")
+def get_bots():
+    return [bot.json() for bot in Bot.all()]
+
+
 @app.post("/heartbeat")
 def heartbeat():
     if not request.remote_addr:
@@ -28,11 +33,6 @@ def heartbeat():
         "status": "ok",
         "version": Version.latest_version(),
     }
-
-
-@app.get("/bots")
-def get_bots():
-    return [bot.json() for bot in Bot.all()]
 
 
 @app.get("/updates")
@@ -53,7 +53,7 @@ def get_updated_file(filename):
 def register_updates():
     data = request.json
     if not data:
-        raise RuntimeError("Shit")
+        raise RuntimeError("Data not found")
 
     filenames: List[str] = data.get("filenames", "").split(",")
     return {"new_version": Version.register_new_vesion(filenames)}
