@@ -7,8 +7,13 @@ C2_DOMAIN = "http://localhost:8000"
 def main():
     while True:
         response = requests.get(url=C2_DOMAIN + "/heartbeat")
-        print(response.json())
-        time.sleep(1)
+        
+        if response.status_code == 200:
+            print(response.json())
+        else:
+            print(response.content)
+        
+        time.sleep(10)
 
 
 if __name__ == "__main__":
