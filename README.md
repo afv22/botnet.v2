@@ -27,7 +27,7 @@
 
 - [x] C2 broadcasts new execution modules
 - [x] Bots fetch new modules and save them locally
-- [ ] Bots execute new modules
+- [x] Bots execute new modules
 
 ### Stage 4: Improved Monitoring
 

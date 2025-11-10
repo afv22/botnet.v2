@@ -1,4 +1,5 @@
 import os
+import signal
 import logging
 from pathlib import Path
 from typing import Optional
@@ -36,6 +37,7 @@ class HeartbeatModule(IntervalExecutable):
         if local_version is None or latest_version > local_version:
             if HeartbeatModule._download_updates(local_version or -1):
                 HeartbeatModule._save_version(latest_version)
+                os.kill(os.getppid(), signal.SIGUSR1)
 
     @staticmethod
     def _fetch_latest_version() -> Optional[int]:

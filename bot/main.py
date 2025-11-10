@@ -1,12 +1,15 @@
-import inspect
+import os
+import sys
 import time
-from datetime import datetime, timedelta
-from importlib import import_module
+import signal
+import inspect
+import threading
 from pathlib import Path
+from importlib import import_module
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ProcessPoolExecutor
-
 
 from executables.common import SoloExecutable, IntervalExecutable
 
@@ -44,14 +47,25 @@ def main():
                     id=id,
                 )
 
+    # Handle restarts from child modules. This signal is sent with: os.kill(os.getppid(), signal.SIGUSR1)
+    restart_flag = threading.Event()
+
+    def handle_restart_signal(signum, frame):
+        restart_flag.set()
+
+    signal.signal(signal.SIGUSR1, handle_restart_signal)
+
     scheduler.start()
+
+    while True:
+        time.sleep(1)
+        if restart_flag.is_set():
+            scheduler.shutdown(wait=True)
+            os.execl(sys.executable, sys.executable, *sys.argv)
 
 
 if __name__ == "__main__":
     try:
         main()
-
-        while True:
-            time.sleep(1)
     finally:
         print("Shutting down...")
