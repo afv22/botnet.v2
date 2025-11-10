@@ -15,10 +15,12 @@ class Bot(db.Model):
     __tablename__ = "bots"
 
     ip: Mapped[str] = mapped_column(String(255), primary_key=True)
+    first_seen: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     last_seen: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     def __init__(self, ip: str) -> None:
         self.ip = ip
+        self.first_seen = datetime.now()
         self.last_seen = datetime.now()
 
         super().__init__()
@@ -40,7 +42,11 @@ class Bot(db.Model):
         db.session.commit()
 
     def json(self):
-        return {"ip": self.ip, "last_seen": self.last_seen}
+        return {
+            "ip": self.ip,
+            "first_seen": self.first_seen,
+            "last_seen": self.last_seen,
+        }
 
 
 def init_db(app: Flask) -> None:
