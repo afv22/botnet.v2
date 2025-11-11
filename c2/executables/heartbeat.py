@@ -1,4 +1,5 @@
 import os
+import json
 import signal
 import logging
 from pathlib import Path
@@ -6,6 +7,7 @@ from typing import Optional
 import requests
 
 from .common import IntervalExecutable
+from crypto import crypto_manager
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +95,27 @@ class HeartbeatModule(IntervalExecutable):
             )
             updates_res.raise_for_status()
 
-            filenames = updates_res.json().get("filenames", [])
+            response_data = updates_res.json()
+            manifest = response_data.get("manifest")
+            signature = response_data.get("signature")
+
+            # Verify this is a legitimate manifest
+            crypto_manager.verify(
+                json.dumps(manifest, sort_keys=True),
+                signature=signature,
+            )
+
+            manifest_version = manifest.get("version")
+            if not manifest_version or not isinstance(manifest_version, int):
+                logger.error("Invalid version format")
+                return False
+
+            # Verify the version is after the local version to prevent replay attacks
+            if manifest_version <= local_version:
+                logger.error("Manifest version is outdated")
+                return False
+
+            filenames = manifest.get("filenames")
             if not isinstance(filenames, list):
                 logger.error("Invalid filenames format")
                 return False

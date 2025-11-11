@@ -1,4 +1,5 @@
 import os
+import json
 import signal
 import logging
 from pathlib import Path
@@ -6,9 +7,11 @@ from typing import Optional
 import requests
 
 from .common import IntervalExecutable
+from crypto import crypto_manager
 
 logger = logging.getLogger(__name__)
 
+# Test
 
 class HeartbeatModule(IntervalExecutable):
     """Send a heartbeat and check for updates"""
@@ -93,7 +96,16 @@ class HeartbeatModule(IntervalExecutable):
             )
             updates_res.raise_for_status()
 
-            filenames = updates_res.json().get("filenames", [])
+            response_data = updates_res.json()
+            manifest = response_data.get("manifest")
+            signature = response_data.get("signature")
+
+            crypto_manager.verify(
+                json.dumps(manifest, sort_keys=True),
+                signature=signature,
+            )
+
+            filenames = manifest.get("filenames", [])
             if not isinstance(filenames, list):
                 logger.error("Invalid filenames format")
                 return False

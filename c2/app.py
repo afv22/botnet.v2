@@ -1,3 +1,4 @@
+import json
 from typing import List
 from dotenv import load_dotenv
 
@@ -6,6 +7,7 @@ load_dotenv()
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 
+from crypto import Crypto
 from db import init_db
 from models import Bot, Version
 
@@ -15,6 +17,7 @@ app.config["SECRET_KEY"] = "dev-secret-key"
 CORS(app)
 
 init_db(app)
+crypto = Crypto()
 
 
 @app.get("/bots")
@@ -41,7 +44,15 @@ def get_updates():
     if not latest_version:
         raise RuntimeError("No Version number")
 
-    return {"filenames": Version.list_modified_files(int(latest_version))}
+    manifest = {
+        "version": Version.latest_version(),
+        "filenames": Version.list_modified_files(int(latest_version)),
+    }
+
+    return {
+        "manifest": manifest,
+        "signature": crypto.sign(json.dumps(manifest, sort_keys=True)),
+    }
 
 
 @app.get("/updates/<filename>")
