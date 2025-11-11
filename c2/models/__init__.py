@@ -1,2 +1,2 @@
 from .bot import Bot
-from .version import Version
+from .version import Version, VersionFile

@@ -11,7 +11,6 @@ from crypto import crypto_manager
 
 logger = logging.getLogger(__name__)
 
-# Test
 
 class HeartbeatModule(IntervalExecutable):
     """Send a heartbeat and check for updates"""
@@ -100,26 +99,38 @@ class HeartbeatModule(IntervalExecutable):
             manifest = response_data.get("manifest")
             signature = response_data.get("signature")
 
+            # Verify this is a legitimate manifest
             crypto_manager.verify(
                 json.dumps(manifest, sort_keys=True),
                 signature=signature,
             )
 
-            filenames = manifest.get("filenames", [])
-            if not isinstance(filenames, list):
-                logger.error("Invalid filenames format")
+            manifest_version = manifest.get("version")
+            if not manifest_version or not isinstance(manifest_version, int):
+                logger.error("Invalid version format")
+                return False
+
+            # Verify the version is after the local version to prevent replay attacks
+            if manifest_version <= local_version:
+                logger.error("Manifest version is outdated")
+                return False
+
+            files = manifest.get("files")
+            if not isinstance(files, list):
+                logger.error("Invalid files format")
                 return False
 
             # Ensure directory exists
             HeartbeatModule.EXECUTABLES_DIR.mkdir(parents=True, exist_ok=True)
 
             # Download each file
-            for fn in filenames:
-                if not HeartbeatModule._is_safe_filename(fn):
-                    logger.error(f"Unsafe filename rejected: {fn}")
+            for f in files:
+                filename = f.get("name")
+                if not HeartbeatModule._is_safe_filename(f.get("name")):
+                    logger.error(f"Unsafe filename rejected: {filename}")
                     continue
 
-                if not HeartbeatModule._download_file(fn):
+                if not HeartbeatModule._download_file(filename):
                     return False
 
             return True

@@ -1,10 +1,11 @@
+import os
 import json
 from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 from crypto import Crypto
@@ -46,13 +47,15 @@ def get_updates():
 
     manifest = {
         "version": Version.latest_version(),
-        "filenames": Version.list_modified_files(int(latest_version)),
+        "files": Version.list_modified_files(int(latest_version)),
     }
 
-    return {
-        "manifest": manifest,
-        "signature": crypto.sign(json.dumps(manifest, sort_keys=True)),
-    }
+    return jsonify(
+        {
+            "manifest": manifest,
+            "signature": crypto.sign(json.dumps(manifest, sort_keys=True)),
+        }
+    )
 
 
 @app.get("/updates/<filename>")
@@ -67,7 +70,7 @@ def register_updates():
         raise RuntimeError("Data not found")
 
     filenames: List[str] = data.get("filenames", "").split(",")
-    return {"new_version": Version.register_new_vesion(filenames)}
+    return {"new_version": Version.register(filenames)}
 
 
 if __name__ == "__main__":
