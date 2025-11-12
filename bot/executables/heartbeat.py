@@ -29,7 +29,6 @@ class HeartbeatModule(IntervalExecutable):
     def execute() -> None:
         try:
             # Fetch new version
-            # TODO: Have the C2 sign this
             latest_version = HeartbeatModule._fetch_latest_version()
             if not latest_version:
                 return

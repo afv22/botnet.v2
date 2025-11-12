@@ -1,21 +1,12 @@
-import hashlib
 from typing import Any, Dict, List
 
 from sqlalchemy import ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db import db
-
+from crypto import Crypto
 
 _latest_version: int = -1
-
-
-def hash_file(path: str):
-    sha256 = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            sha256.update(chunk)
-    return sha256.hexdigest()
 
 
 class Version(db.Model):
@@ -32,7 +23,7 @@ class Version(db.Model):
 
         files = []
         for fn in filenames:
-            file_hash = hash_file("executables/" + fn)
+            file_hash = Crypto.hash_file("executables/" + fn)
             files.append(VersionFile(filename=str(fn), file_hash=file_hash))  # type: ignore
 
         new_version = Version(files=files)  # type: ignore
@@ -63,8 +54,6 @@ class Version(db.Model):
 
 
 class VersionFile(db.Model):
-    from .version import Version
-
     __tablename__ = "version_files"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

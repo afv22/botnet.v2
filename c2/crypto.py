@@ -1,4 +1,5 @@
 import logging
+import hashlib
 from pathlib import Path
 
 import nacl.signing
@@ -31,3 +32,11 @@ class Crypto:
         )
 
         return signed.signature.decode()
+
+    @staticmethod
+    def hash_file(path: str):
+        sha256 = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                sha256.update(chunk)
+        return sha256.hexdigest()
