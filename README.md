@@ -1,5 +1,7 @@
 # Botnet Proof of Concept
 
+For educational and research purposes only.
+
 ## Features
 
 - Command & Control Server
