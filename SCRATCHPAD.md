@@ -16,7 +16,7 @@ The C2 should manage a version ticker, along with which module was updated in th
 
 Each bot should remember which version it has most recently successfully fetched. When it sends a heartbeat, it should request the current version number from the C2. If the bot's local version number is outdated, it should request all changes since.
 
-Let's say a bot is very out of date, and some modules have been updated multiple times. The bot should only fetch the most recent version rather than downloading each one. C2 should maintain a state table with the hashes of the current modules, and a changelog. When a bot requests new files, C2 should go through the changelog, note which have been touched since the bot's latest version, and send back the IDs and hashes of needed files. The bot then requests the most recent versions. 
+Let's say a bot is very out of date, and some modules have been updated multiple times. The bot should only fetch the most recent version rather than downloading each one. C2 should maintain a state table with the hashes of the current modules, and a changelog. When a bot requests new files, C2 should go through the changelog, note which have been touched since the bot's latest version, and send back the IDs and hashes of needed files. The bot then requests the most recent versions.
 
 Thanks to the dynamic scheduler registrations, we don't need to explicitly register the new modules, only write them to the executables directory. Once successfully written, the local version number should be updated.
 

@@ -65,8 +65,8 @@ class HeartbeatModule(IntervalExecutable):
 
             # For each file in manifest:
             file_metadata = manifest.get("files", [])
-            tmpfiles: List[Tuple[Path, str]] = []
             with tempfile.TemporaryDirectory() as temp_dir:
+                tmpfiles: List[Tuple[Path, str]] = []
                 tmpdir = Path(temp_dir)
                 for file in file_metadata:
                     filename = file.get("name")

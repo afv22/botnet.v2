@@ -67,5 +67,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    finally:
-        print("Shutting down...")
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    except Exception as e:
+        print(e)
